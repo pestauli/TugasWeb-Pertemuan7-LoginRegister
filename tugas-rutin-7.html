@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+<title>DevAuth – Login &amp; Register</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#070b14;--panel:#0d1424;--panel2:#111a2f;--line:#1f2b46;
+  --text:#e6ecff;--mut:#8593b5;
+  --a:#22d3ee;--b:#a78bfa;--ok:#34d399;--err:#fb7185;--warn:#fbbf24;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;min-height:100dvh;display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
+  background:
+    radial-gradient(600px 400px at 12% 8%,rgba(34,211,238,.16),transparent 70%),
+    radial-gradient(560px 420px at 92% 92%,rgba(167,139,250,.18),transparent 70%),
+    linear-gradient(var(--line) 1px,transparent 1px) 0 0/44px 44px,
+    linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/44px 44px,
+    var(--bg);
+  background-blend-mode:normal,normal,soft-light,soft-light,normal;
+  color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+.shell{width:100%;max-width:440px;display:grid;gap:14px}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--mono);font-weight:700;font-size:1.25rem;letter-spacing:-.02em}
+.brand b{background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .lg{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));color:#07101f;font-size:.95rem}
+
+.win{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px rgba(34,211,238,.05),0 0 80px rgba(34,211,238,.06)}
+.bar{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.path{flex:1;min-width:0;font-family:var(--mono);font-size:.78rem;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-family:var(--mono);font-size:.68rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.body{padding:22px 22px 18px}
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);margin-bottom:20px}
+.tabs button{border:0;border-radius:9px;padding:9px;font:inherit;font-size:.92rem;font-weight:600;color:var(--mut);background:transparent;cursor:pointer;transition:.18s}
+.tabs button[aria-selected="true"]{color:#07101f;background:linear-gradient(90deg,var(--a),var(--b))}
+.tabs button:focus-visible,.btn:focus-visible,.eye:focus-visible,.link:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+h1{margin:0 0 4px;font-size:1.5rem;letter-spacing:-.02em}
+.sub{margin:0 0 18px;color:var(--mut);font-size:.9rem}
+.sub code{font-family:var(--mono);color:var(--a)}
+
+.field{margin-bottom:14px}
+label{display:block;font-family:var(--mono);font-size:.76rem;color:var(--mut);margin-bottom:6px;text-transform:lowercase;letter-spacing:.02em}
+label::before{content:"> ";color:var(--a)}
+.inp{position:relative}
+input[type=text],input[type=email],input[type=password]{
+  width:100%;padding:12px 44px 12px 14px;font:inherit;font-size:1rem;color:var(--text);
+  background:rgba(2,6,16,.55);border:1px solid var(--line);border-radius:12px;outline:none;transition:border-color .15s,box-shadow .15s}
+input::placeholder{color:#4a5878}
+input:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(34,211,238,.16)}
+input[aria-invalid="true"]{border-color:var(--err);box-shadow:0 0 0 3px rgba(251,113,133,.14)}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:9px;background:transparent;color:var(--mut);cursor:pointer;font-size:1rem}
+.eye:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.err{display:block;min-height:0;margin-top:6px;font-size:.8rem;color:var(--err)}
+.err:empty{display:none}
+
+.meter{display:grid;gap:8px;margin:-4px 0 14px}
+.track{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.fill{height:100%;width:0;border-radius:99px;background:var(--err);transition:width .25s,background .25s}
+.meter-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.74rem;color:var(--mut)}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--mut)}
+.rules li::before{content:"○ ";color:var(--mut)}
+.rules li.ok{color:var(--ok)}.rules li.ok::before{content:"● ";color:var(--ok)}
+
+.check{display:flex;align-items:center;gap:10px;margin:2px 0 4px;font-size:.88rem;color:var(--mut);cursor:pointer;user-select:none}
+.check input{width:17px;height:17px;accent-color:var(--a)}
+
+.btn{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;font:inherit;font-weight:700;font-size:1rem;cursor:pointer;color:#07101f;background:linear-gradient(90deg,var(--a),var(--b));box-shadow:0 8px 24px rgba(34,211,238,.22);transition:transform .12s,filter .15s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.985)}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn.danger{background:transparent;color:var(--err);border:1px solid rgba(251,113,133,.5);box-shadow:none}
+.btn.danger:hover{background:rgba(251,113,133,.1)}
+.alt{margin:16px 0 0;text-align:center;color:var(--mut);font-size:.9rem}
+.link{background:none;border:0;padding:0;font:inherit;color:var(--a);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+.flash{display:flex;gap:10px;padding:11px 14px;border-radius:12px;margin-bottom:16px;font-size:.9rem;border:1px solid;animation:pop .25s ease}
+.flash.ok{color:#a7f3d0;background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.4)}
+.flash.error{color:#fecdd3;background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.4)}
+.flash.warn{color:#fde68a;background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.4)}
+.flash ul{margin:0;padding-left:18px}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}}
+.shake{animation:shake .38s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* Dashboard */
+.me{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.av{width:58px;height:58px;flex-shrink:0;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:800;color:#07101f;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 8px 24px rgba(167,139,250,.3)}
+.me h1{margin:0;font-size:1.3rem;overflow-wrap:anywhere}
+.me p{margin:2px 0 0;color:var(--mut);font-size:.88rem;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{padding:12px 8px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.stat strong{display:block;font-size:1.25rem;font-family:var(--mono);color:var(--a)}
+.stat span{font-size:.7rem;color:var(--mut)}
+.info{width:100%;border-collapse:collapse;margin-bottom:14px}
+.info th,.info td{text-align:left;padding:9px 0;border-bottom:1px solid var(--line);font-size:.88rem;vertical-align:top}
+.info th{width:36%;color:var(--mut);font-weight:500;font-family:var(--mono);font-size:.78rem}
+.info td{overflow-wrap:anywhere}
+.term{min-height:104px;padding:12px 14px;border-radius:12px;background:#02060f;border:1px solid var(--line);font-family:var(--mono);font-size:.8rem;line-height:1.7;color:#9fb0d6;overflow-x:auto}
+.term .p{color:var(--ok)}.term .o{color:var(--text)}
+.caret{display:inline-block;width:7px;height:1em;background:var(--a);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+.foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.74rem;color:var(--mut)}
+.foot .link{font-size:.74rem;color:var(--mut)}
+.hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;pointer-events:none;padding:10px 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:.86rem;box-shadow:0 12px 30px rgba(0,0,0,.5);transition:.25s;z-index:10;max-width:calc(100vw - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><span class="lg" aria-hidden="true">&lt;/&gt;</span><span><b>Dev</b>Auth</span></div>
+
+  <div class="win" id="win">
+    <div class="bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="path" id="path">~/auth/login</span>
+      <span class="tag">simulasi</span>
+    </div>
+
+    <div class="body">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Masuk atau daftar">
+        <button type="button" role="tab" id="t-login" data-view="login" aria-selected="true">Login</button>
+        <button type="button" role="tab" id="t-register" data-view="register" aria-selected="false">Register</button>
+      </div>
+
+      <div id="flash" class="flash hidden" role="alert"></div>
+
+      <!-- LOGIN -->
+      <section id="v-login" aria-labelledby="h-login">
+        <h1 id="h-login">Selamat datang kembali 👋</h1>
+        <p class="sub">Masuk untuk membuka <code>dashboard</code> kamu.</p>
+        <form id="f-login" novalidate>
+          <div class="field">
+            <label for="l-email">email</label>
+            <div class="inp"><input id="l-email" type="email" autocomplete="email" placeholder="kamu@email.com" inputmode="email" autocapitalize="off"></div>
+            <small class="err" id="l-email-err"></small>
+          </div>
+          <div class="field">
+            <label for="l-pw">password</label>
+            <div class="inp"><input id="l-pw" type="password" autocomplete="current-password" placeholder="••••••••">
+              <button type="button" class="eye" data-target="l-pw" aria-label="Tampilkan password">👁</button></div>
+            <small class="err" id="l-pw-err"></small>
+          </div>
+          <label class="check"><input type="checkbox" id="l-remember"> Ingat saya (30 hari)</label>
+          <button class="btn" type="submit" id="l-btn">Masuk →</button>
+        </form>
+        <p class="alt">Belum punya akun? <button type="button" class="link" data-view="register">Daftar</button></p>
+      </section>
+
+      <!-- REGISTER -->
+      <section id="v-register" class="hidden" aria-labelledby="h-register">
+        <h1 id="h-register">Buat akun baru 🚀</h1>
+        <p class="sub">Gratis dan cuma butuh <code>1 menit</code>.</p>
+        <form id="f-register" novalidate>
+          <div class="field">
+            <label for="r-name">nama</label>
+            <div class="inp"><input id="r-name" type="text" autocomplete="name" placeholder="Nama lengkap" maxlength="60"></div>
+            <small class="err" id="r-name-err"></small>
+          </div>
+          <div class="field">
+            <label for="r-email">email</label>
+            <div class="inp"><input id="r-email" type="email" autocomplete="email" placeholder="kamu@email.com" inputmode="email" autocapitalize="off"></div>
+            <small class="err" id="r-email-err"></small>
+          </div>
+          <div class="field">
+            <label for="r-pw">password</label>
+            <div class="inp"><input id="r-pw" type="password" autocomplete="new-password" placeholder="Minimal 8 karakter">
+              <button type="button" class="eye" data-target="r-pw" aria-label="Tampilkan password">👁</button></div>
+            <small class="err" id="r-pw-err"></small>
+          </div>
+          <div class="meter" aria-live="polite">
+            <div class="track"><div class="fill" id="m-fill"></div></div>
+            <div class="meter-row"><span>kekuatan password</span><span id="m-label">–</span></div>
+            <ul class="rules">
+              <li id="rule-len">≥ 8 karakter</li>
+              <li id="rule-alpha">huruf</li>
+              <li id="rule-num">angka</li>
+              <li id="rule-sym">simbol (bonus)</li>
+            </ul>
+          </div>
+          <div class="field">
+            <label for="r-confirm">konfirmasi password</label>
+            <div class="inp"><input id="r-confirm" type="password" autocomplete="new-password" placeholder="Ulangi password">
+              <button type="button" class="eye" data-target="r-confirm" aria-label="Tampilkan password">👁</button></div>
+            <small class="err" id="r-confirm-err"></small>
+          </div>
+          <button class="btn" type="submit" id="r-btn">Daftar →</button>
+        </form>
+        <p class="alt">Sudah punya akun? <button type="button" class="link" data-view="login">Login</button></p>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section id="v-dash" class="hidden" aria-labelledby="h-dash">
+        <div class="me">
+          <div class="av" id="d-av" aria-hidden="true"></div>
+          <div><h1 id="h-dash"></h1><p id="d-email"></p></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong id="d-logins">0</strong><span>total login</span></div>
+          <div class="stat"><strong>ON</strong><span>sesi aktif</span></div>
+          <div class="stat"><strong id="d-days">0</strong><span>hari terdaftar</span></div>
+        </div>
+        <table class="info">
+          <tr><th>terdaftar</th><td id="d-created"></td></tr>
+          <tr><th>login sebelumnya</th><td id="d-last"></td></tr>
+          <tr><th>tipe sesi</th><td id="d-mode"></td></tr>
+        </table>
+        <div class="term" id="term" aria-label="Log terminal"></div>
+        <button class="btn danger" type="button" id="logout">Logout</button>
+      </section>
+    </div>
+
+    <div class="foot">
+      <span>Data tersimpan di browser (localStorage). Password di-hash SHA-256.</span>
+      <button type="button" class="link" id="reset">Reset data demo</button>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ================= Util ================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERS_KEY = 'devauth.users';
+const SESSION_KEY = 'devauth.session';
+const DAY = 86400000;
+const MAX_FAILS = 5;
+const LOCK_MS = 30000;
+
+// Storage aman: jatuh ke memori jika localStorage diblokir
+const mem = {};
+const kv = {
+  get(area, key, fallback) {
+    try {
+      const raw = window[area].getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch { return mem[area + key] ?? fallback; }
+  },
+  set(area, key, value) {
+    try { window[area].setItem(key, JSON.stringify(value)); } catch { mem[area + key] = value; }
+  },
+  del(area, key) {
+    try { window[area].removeItem(key); } catch { delete mem[area + key]; }
+  },
+};
+
+const getUsers = () => kv.get('localStorage', USERS_KEY, []);
+const saveUsers = (list) => kv.set('localStorage', USERS_KEY, list);
+const fmtDate = (ts) => new Date(ts).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+const normEmail = (e) => e.trim().toLowerCase();
+
+const toHex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+const newSalt = () => globalThis.crypto?.randomUUID?.() ?? `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+async function hashPassword(password, salt) {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  if (globalThis.crypto?.subtle) return toHex(await crypto.subtle.digest('SHA-256', data));
+  let h = 2166136261; // cadangan sederhana bila SubtleCrypto tak tersedia
+  for (const b of data) { h ^= b; h = Math.imul(h, 16777619); }
+  return `f${(h >>> 0).toString(16)}`;
+}
+
+/* ================= Sesi ================= */
+const saveSession = (email, remember) => {
+  const data = { email, remember, exp: remember ? Date.now() + 30 * DAY : 0 };
+  kv.del('localStorage', SESSION_KEY); kv.del('sessionStorage', SESSION_KEY);
+  kv.set(remember ? 'localStorage' : 'sessionStorage', SESSION_KEY, data);
+};
+const clearSession = () => { kv.del('localStorage', SESSION_KEY); kv.del('sessionStorage', SESSION_KEY); };
+const currentSession = () => {
+  const s = kv.get('sessionStorage', SESSION_KEY, null) ?? kv.get('localStorage', SESSION_KEY, null);
+  if (!s) return null;
+  if (s.exp && s.exp < Date.now()) { clearSession(); return null; }
+  const user = getUsers().find((u) => u.email === s.email);
+  return user ? { user, remember: !!s.remember } : null;
+};
+
+/* ================= UI helpers ================= */
+const flashEl = $('#flash');
+const toastEl = $('#toast');
+let toastTimer;
+
+function setFlash(type, msg) {
+  flashEl.replaceChildren();
+  if (!msg || (Array.isArray(msg) && !msg.length)) { flashEl.className = 'flash hidden'; return; }
+  const icon = document.createElement('span');
+  icon.textContent = { ok: '✅', error: '⛔', warn: '⏳' }[type];
+  const box = document.createElement('div');
+  if (Array.isArray(msg)) {
+    const ul = document.createElement('ul');
+    msg.forEach((m) => { const li = document.createElement('li'); li.textContent = m; ul.append(li); });
+    box.append(ul);
+  } else box.textContent = msg;
+  flashEl.append(icon, box);
+  flashEl.className = `flash ${type}`;
+}
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+function setFieldErrors(prefix, errors) {
+  $$(`#v-${prefix === 'l' ? 'login' : 'register'} input`).forEach((i) => i.removeAttribute('aria-invalid'));
+  $$(`#v-${prefix === 'l' ? 'login' : 'register'} .err`).forEach((e) => { e.textContent = ''; });
+  Object.entries(errors).forEach(([field, msg]) => {
+    const input = $(`#${prefix}-${field}`);
+    input?.setAttribute('aria-invalid', 'true');
+    $(`#${prefix}-${field}-err`).textContent = msg;
+  });
+  const first = Object.keys(errors)[0];
+  if (first) {
+    $(`#${prefix}-${first}`)?.focus();
+    $('#win').classList.remove('shake'); void $('#win').offsetWidth; $('#win').classList.add('shake');
+  }
+}
+
+let typingToken = 0;
+function typeLines(lines) {
+  const term = $('#term');
+  const token = ++typingToken;
+  term.replaceChildren();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const caret = Object.assign(document.createElement('span'), { className: 'caret' });
+  let i = 0;
+  const next = () => {
+    if (token !== typingToken) return;
+    if (i >= lines.length) { term.append(caret); return; }
+    const [cmd, out] = lines[i++];
+    const row = document.createElement('div');
+    const p = Object.assign(document.createElement('span'), { className: 'p', textContent: '$ ' });
+    const c = document.createElement('span'); c.textContent = cmd;
+    row.append(p, c);
+    term.append(row);
+    const o = Object.assign(document.createElement('div'), { className: 'o', textContent: out });
+    term.append(o);
+    setTimeout(next, reduce ? 0 : 420);
+  };
+  next();
+}
+
+/* ================= Navigasi ================= */
+function show(view, flash) {
+  ['login', 'register', 'dash'].forEach((v) => $(`#v-${v}`).classList.toggle('hidden', v !== view));
+  $('#tabs').classList.toggle('hidden', view === 'dash');
+  $$('#tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === view)));
+  $('#path').textContent = `~/auth/${view === 'dash' ? 'dashboard' : view}`;
+  document.title = `DevAuth – ${{ login: 'Login', register: 'Register', dash: 'Dashboard' }[view]}`;
+  setFlash(flash?.type, flash?.msg);
+  if (view !== 'dash') (view === 'login' ? $('#l-email') : $('#r-name')).focus({ preventScroll: true });
+}
+
+function showDashboard() {
+  const sess = currentSession();
+  if (!sess) { show('login', { type: 'error', msg: 'Silakan login terlebih dahulu.' }); return; }
+  const { user, remember } = sess;
+  $('#h-dash').textContent = `Halo, ${user.name}!`;
+  $('#d-av').textContent = user.name.trim().charAt(0).toUpperCase() || '?';
+  $('#d-email').textContent = user.email;
+  $('#d-logins').textContent = user.logins;
+  $('#d-days').textContent = Math.max(0, Math.floor((Date.now() - user.createdAt) / DAY));
+  $('#d-created').textContent = fmtDate(user.createdAt);
+  $('#d-last').textContent = user.prevLogin ? fmtDate(user.prevLogin) : 'Ini login pertamamu 🎉';
+  $('#d-mode').textContent = remember ? 'Ingat saya (30 hari)' : 'Sesi browser (hilang saat ditutup)';
+  show('dash');
+  typeLines([
+    ['whoami', user.name],
+    ['session --status', `aktif · ${remember ? 'persisten 30 hari' : 'sesi browser'}`],
+    ['echo $STATUS', 'Login berhasil. Selamat ngoding! 👨‍💻'],
+  ]);
+}
+
+/* ================= Kekuatan password ================= */
+const passwordRules = (p) => ({
+  len: p.length >= 8,
+  alpha: /[A-Za-z]/.test(p),
+  num: /\d/.test(p),
+  sym: /[^A-Za-z0-9]/.test(p),
+});
+function updateMeter() {
+  const p = $('#r-pw').value;
+  const r = passwordRules(p);
+  Object.entries(r).forEach(([k, ok]) => $(`#rule-${k}`).classList.toggle('ok', ok));
+  let score = 0;
+  if (p) {
+    score = [r.len, r.alpha, r.num, r.sym, p.length >= 12].filter(Boolean).length;
+    if (!(r.len && r.alpha && r.num)) score = Math.min(score, 2);
+  }
+  const levels = [
+    ['–', 0, 'var(--err)'], ['Lemah', 25, 'var(--err)'], ['Lemah', 40, 'var(--err)'],
+    ['Cukup', 62, 'var(--warn)'], ['Kuat', 82, 'var(--ok)'], ['Sangat kuat', 100, 'var(--ok)'],
+  ];
+  const [label, width, color] = levels[score];
+  $('#m-label').textContent = label;
+  $('#m-fill').style.width = `${width}%`;
+  $('#m-fill').style.background = color;
+}
+
+/* ================= Register ================= */
+$('#f-register').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#r-name').value.trim();
+  const email = $('#r-email').value.trim();
+  const pw = $('#r-pw').value;
+  const confirm = $('#r-confirm').value;
+  const errors = {};
+
+  if (!name) errors.name = 'Nama wajib diisi.';
+  else if (name.length < 3) errors.name = 'Nama minimal 3 karakter.';
+
+  if (!email) errors.email = 'Email wajib diisi.';
+  else if (!EMAIL_RE.test(email)) errors.email = 'Format email tidak valid.';
+  else if (getUsers().some((u) => u.email === normEmail(email))) errors.email = 'Email sudah terdaftar. Silakan login.';
+
+  if (!pw) errors.pw = 'Password wajib diisi.';
+  else if (pw.length < 8) errors.pw = 'Password minimal 8 karakter.';
+  else if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) errors.pw = 'Password harus mengandung huruf dan angka.';
+
+  if (!confirm) errors.confirm = 'Konfirmasi password wajib diisi.';
+  else if (pw !== confirm) errors.confirm = 'Konfirmasi password tidak cocok.';
+
+  setFieldErrors('r', errors);
+  if (Object.keys(errors).length) return;
+
+  const btn = $('#r-btn');
+  btn.disabled = true;
+  try {
+    const salt = newSalt();
+    const hash = await hashPassword(pw, salt);
+    saveUsers([...getUsers(), { name, email: normEmail(email), salt, hash, createdAt: Date.now(), logins: 0, prevLogin: null, lastLogin: null }]);
+    e.target.reset(); updateMeter(); setFieldErrors('r', {});
+    show('login', { type: 'ok', msg: 'Registrasi berhasil! Silakan login.' });
+    $('#l-email').value = email;
+    $('#l-pw').focus();
+  } finally { btn.disabled = false; }
+});
+
+/* ================= Login ================= */
+let fails = 0;
+let lockedUntil = 0;
+let lockTimer;
+
+function startLockCountdown() {
+  clearInterval(lockTimer);
+  const tick = () => {
+    const left = Math.ceil((lockedUntil - Date.now()) / 1000);
+    if (left <= 0) { clearInterval(lockTimer); fails = 0; setFlash(); $('#l-btn').disabled = false; return; }
+    setFlash('warn', `Terlalu banyak percobaan gagal. Coba lagi dalam ${left} detik.`);
+    $('#l-btn').disabled = true;
+  };
+  tick();
+  lockTimer = setInterval(tick, 500);
+}
+
+$('#f-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (Date.now() < lockedUntil) return;
+  const email = $('#l-email').value.trim();
+  const pw = $('#l-pw').value;
+  const errors = {};
+  if (!email) errors.email = 'Email wajib diisi.';
+  if (!pw) errors.pw = 'Password wajib diisi.';
+  setFieldErrors('l', errors);
+  if (Object.keys(errors).length) { setFlash(); return; }
+
+  const btn = $('#l-btn');
+  btn.disabled = true;
+  try {
+    const users = getUsers();
+    const idx = users.findIndex((u) => u.email === normEmail(email));
+    const ok = idx >= 0 && (await hashPassword(pw, users[idx].salt)) === users[idx].hash;
+    if (!ok) {
+      fails += 1;
+      setFieldErrors('l', { pw: ' ' });
+      $('#l-pw-err').textContent = '';
+      if (fails >= MAX_FAILS) { lockedUntil = Date.now() + LOCK_MS; startLockCountdown(); return; }
+      setFlash('error', `Email atau password salah! (${fails}/${MAX_FAILS})`);
+      return;
+    }
+    fails = 0;
+    const u = users[idx];
+    u.prevLogin = u.lastLogin;
+    u.lastLogin = Date.now();
+    u.logins += 1;
+    saveUsers(users);
+    saveSession(u.email, $('#l-remember').checked);
+    e.target.reset(); setFieldErrors('l', {});
+    toast(`Login berhasil. Hai, ${u.name}!`);
+    showDashboard();
+  } finally { if (Date.now() >= lockedUntil) btn.disabled = false; }
+});
+
+/* ================= Event umum (delegation) ================= */
+document.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-view]');
+  if (nav) { show(nav.dataset.view); return; }
+
+  const eye = e.target.closest('.eye');
+  if (eye) {
+    const input = $(`#${eye.dataset.target}`);
+    const reveal = input.type === 'password';
+    input.type = reveal ? 'text' : 'password';
+    eye.textContent = reveal ? '🙈' : '👁';
+    eye.setAttribute('aria-label', reveal ? 'Sembunyikan password' : 'Tampilkan password');
+  }
+});
+
+// Hapus pesan error saat user mengetik
+document.addEventListener('input', (e) => {
+  const input = e.target.closest('input');
+  if (!input) return;
+  input.removeAttribute('aria-invalid');
+  const err = $(`#${input.id}-err`);
+  if (err) err.textContent = '';
+});
+$('#r-pw').addEventListener('input', updateMeter);
+
+$('#logout').addEventListener('click', () => {
+  clearSession();
+  typingToken++;
+  show('login', { type: 'ok', msg: 'Anda berhasil logout.' });
+});
+
+$('#reset').addEventListener('click', () => {
+  if (!confirm('Hapus semua akun demo dan sesi di browser ini?')) return;
+  kv.del('localStorage', USERS_KEY);
+  clearSession();
+  show('login', { type: 'ok', msg: 'Semua data demo sudah dihapus.' });
+});
+
+/* ================= Init ================= */
+updateMeter();
+currentSession() ? showDashboard() : show('login');
+</script>
+</body>
+</html>
